@@ -1,0 +1,183 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Hard \"Sudoku\"",
+      "provenance": [],
+      "collapsed_sections": [],
+      "authorship_tag": "ABX9TyP4glzt/p7JryYLKPk3HDvo",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/rizomus/Hard-sudoku-solver/blob/main/function\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def solve(board):\n",
+        "        \n",
+        "    from copy import deepcopy\n",
+        "    \n",
+        "\n",
+        "    def col(p):                 # columns\n",
+        "        return [list(i) for i in zip(*p)]\n",
+        "    \n",
+        "    \n",
+        "    def triplet(p):             # 3x3 blocks\n",
+        "        triplet_ = []\n",
+        "        for k in range(3):\n",
+        "            tr3 = []\n",
+        "            for i in range(3):\n",
+        "                tr1 = [p[j+k*3][i*3:i*3+3] for j in range(3)]\n",
+        "                tr1 = [tr1[i][j] for i in range(3) for j in range(3)]\n",
+        "                tr3.append(tr1)\n",
+        "            triplet_.extend(tr3)\n",
+        "        return triplet_\n",
+        "    \n",
+        "    \n",
+        "    def check(p):               # check solution\n",
+        "        for x in p:\n",
+        "            if set([1,2,3,4,5,6,7,8,9]).difference(x):\n",
+        "                return False\n",
+        "        for x in col(p):\n",
+        "            if set([1,2,3,4,5,6,7,8,9]).difference(x):\n",
+        "                return False\n",
+        "        for x in triplet(p):\n",
+        "            if set([1,2,3,4,5,6,7,8,9]).difference(x):\n",
+        "                return False\n",
+        "        return True\n",
+        "    \n",
+        "    \n",
+        "    def basic(puzzle, stack):              # Basic algorithm. Searching available numbers for each cell. If only one variant - update puzzle.                               \n",
+        "        new_data = True                    # if new puzzle after updating\n",
+        "        got_zeros = True                   # empty cells\n",
+        "        new_puzzle = deepcopy(puzzle)\n",
+        "\n",
+        "        while got_zeros and new_data:\n",
+        "            puzzle = deepcopy(new_puzzle)\n",
+        "            got_zeros = False\n",
+        "            new_data = False\n",
+        "            min_ = False            # (empty cell with minimum variants to fill)\n",
+        "            columns = col(puzzle)\n",
+        "            triplets = triplet(puzzle)\n",
+        "            \n",
+        "            for i in range(9):\n",
+        "                for j in range(9):\n",
+        "                    if puzzle[i][j] == 0:           # empty cell\n",
+        "                        got_zeros = True\n",
+        "                        x = set([1,2,3,4,5,6,7,8,9])            # all available variants to fill\n",
+        "                        x.difference_update(puzzle[i])                  # exclude all in row\n",
+        "                        x.difference_update(columns[j])                 # exclude all in column\n",
+        "                        x.difference_update(triplets[(i//3)*3 + j//3])  # exclude all in 3x3 block\n",
+        "                        if len(x)==0:                           # wrong solution, try next \n",
+        "                            return False, new_puzzle\n",
+        "                        if len(x)==1:                                   # if only one variant for cell - it's proper \n",
+        "                            new_puzzle[i][j] = list(x)[0]\n",
+        "                            new_data = True\n",
+        "                        else:                                           # we must choose any varyant to fill any cell\n",
+        "                            if min_:                                    # let's find cell with least amount of variants \n",
+        "                                if len(x) < min_[0]:\n",
+        "                                    min_ = (len(x), [i,j], list(x))\n",
+        "                            else:\n",
+        "                                min_ = (len(x), [i,j], list(x))\n",
+        "\n",
+        "        if not(got_zeros):\n",
+        "            return (check(new_puzzle), new_puzzle)   \n",
+        "        else:                                           # add variants to stack\n",
+        "            for i in range(min_[0]):\n",
+        "                a = min_[1][0]\n",
+        "                b = min_[1][1]\n",
+        "                new_puzzle[a][b] = min_[2][i]\n",
+        "                stack.append(deepcopy(new_puzzle))\n",
+        "            return (False, new_puzzle)\n",
+        "\n",
+        "        \n",
+        "    def sudoku_solver(puzzle, stack):\n",
+        "        done, puzzle = basic(puzzle, stack)             # try to fill empy cells while possible, thereafter for cell with minimum N variants create N versions of puzzle and put them to stack\n",
+        "        while not(done):\n",
+        "            puzzle = stack.pop()                        # get version of puzzle\n",
+        "            done, puzzle = basic(puzzle, stack)         # try to fill empy cells while possible, thereafter for cell with minimum N variants create N versions of puzzle and put them to stack\n",
+        "        return puzzle\n",
+        "    \n",
+        "    \n",
+        "    stack = []\n",
+        "    return sudoku_solver(board, stack)"
+      ],
+      "metadata": {
+        "id": "G8IX2fUQy0y3"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "TIrD5CExJb_3"
+      },
+      "outputs": [],
+      "source": [
+        "test_puzzle = [[9, 0, 0, 0, 8, 0, 0, 0, 1],\n",
+        " [0, 0, 0, 4, 0, 6, 0, 0, 0],\n",
+        " [0, 0, 5, 0, 7, 0, 3, 0, 0],\n",
+        " [0, 6, 0, 0, 0, 0, 0, 4, 0],\n",
+        " [4, 0, 1, 0, 6, 0, 5, 0, 8],\n",
+        " [0, 9, 0, 0, 0, 0, 0, 2, 0],\n",
+        " [0, 0, 7, 0, 3, 0, 2, 0, 0],\n",
+        " [0, 0, 0, 7, 0, 5, 0, 0, 0],\n",
+        " [1, 0, 0, 0, 4, 0, 0, 0, 7]]"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "solve(test_puzzle)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "sB2Nae7r4IR0",
+        "outputId": "35d295d4-f484-437f-f368-c6ea4bdd1ca7"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "[[9, 2, 6, 5, 8, 3, 4, 7, 1],\n",
+              " [7, 1, 3, 4, 2, 6, 9, 8, 5],\n",
+              " [8, 4, 5, 9, 7, 1, 3, 6, 2],\n",
+              " [3, 6, 2, 8, 5, 7, 1, 4, 9],\n",
+              " [4, 7, 1, 2, 6, 9, 5, 3, 8],\n",
+              " [5, 9, 8, 3, 1, 4, 7, 2, 6],\n",
+              " [6, 5, 7, 1, 3, 8, 2, 9, 4],\n",
+              " [2, 8, 4, 7, 9, 5, 6, 1, 3],\n",
+              " [1, 3, 9, 6, 4, 2, 8, 5, 7]]"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 10
+        }
+      ]
+    }
+  ]
+}
